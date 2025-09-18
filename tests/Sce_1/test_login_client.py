@@ -9,7 +9,7 @@ from ..helpers import select_custom_dropdown
 
 @allure.feature("Создание заявки клиентом")
 @allure.story("Авторизация и создание новой заявки")
-def test_login_and_create_request(driver):
+def test_login_and_create_request(driver, save_request_id):
     wait = WebDriverWait(driver, 15)
 
     with allure.step("Авторизация клиента"):
@@ -37,7 +37,7 @@ def test_login_and_create_request(driver):
         select_custom_dropdown(
             driver,
             '//*[@id="088fa587fbac295705e7e561d778761bd353d683"]/fieldset[2]/div[2]/div/fieldset/div/div[1]/div/div/div/div/div[1]',
-            "//div[contains(@class,'option') and normalize-space(text())='777']"
+            "//div[contains(@class,'option active') and normalize-space(text())='777']"
         )
 
         driver.find_element(By.ID, "field-mileage-fb852198353ae70c02bfba57c5263d5a61ed9f8d").send_keys("5991")
@@ -58,8 +58,6 @@ def test_login_and_create_request(driver):
         driver.execute_script("arguments[0].scrollIntoView(true);", button)
         driver.execute_script("arguments[0].click();", button)
 
-
-
     with allure.step("Ожидание редиректа и получение ID заявки"):
         wait.until(EC.url_matches(r".*/requests/\d+/edit"))
         current_url = driver.current_url
@@ -68,11 +66,13 @@ def test_login_and_create_request(driver):
         allure.attach(current_url, name="URL заявки", attachment_type=allure.attachment_type.TEXT)
         allure.attach(request_id or "Не найдено", name="ID заявки", attachment_type=allure.attachment_type.TEXT)
         print("ID заявки:", request_id)
+        if request_id:
+            save_request_id(request_id)
 
         button = wait.until(EC.element_to_be_clickable((By.ID, "notifyModalClose")))
         driver.execute_script("arguments[0].scrollIntoView(true);", button)
         driver.execute_script("arguments[0].click();", button)
-
+    with allure.step("Направление заявки в СТТ"):
         button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[.//span[text()='Направить заявку в СТТ']]")))
         driver.execute_script("arguments[0].scrollIntoView(true);", button)
         driver.execute_script("arguments[0].click();", button)
