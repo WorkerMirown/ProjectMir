@@ -19,3 +19,4 @@ def select_custom_dropdown(driver, dropdown_xpath, option_xpath, timeout=15):
     option = wait.until(EC.element_to_be_clickable((By.XPATH, option_xpath)))
     driver.execute_script("arguments[0].scrollIntoView(true);", option)
     option.click()
+

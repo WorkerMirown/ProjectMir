@@ -2,6 +2,8 @@
 import re
 import time
 import allure
+from pathlib import Path
+import os
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -9,7 +11,7 @@ from ..helpers import select_custom_dropdown
 
 @allure.feature("Создание заявки клиентом")
 @allure.story("Авторизация и создание новой заявки")
-def test_login_and_create_request(driver, save_request_id):
+def test_login_and_create_request(driver, save_request_id_file):
     wait = WebDriverWait(driver, 15)
 
     with allure.step("Авторизация клиента"):
@@ -63,11 +65,22 @@ def test_login_and_create_request(driver, save_request_id):
         current_url = driver.current_url
         match = re.search(r"/requests/(\d+)/edit", current_url)
         request_id = match.group(1) if match else None
+
         allure.attach(current_url, name="URL заявки", attachment_type=allure.attachment_type.TEXT)
         allure.attach(request_id or "Не найдено", name="ID заявки", attachment_type=allure.attachment_type.TEXT)
         print("ID заявки:", request_id)
+
         if request_id:
-            save_request_id(request_id)
+            save_request_id_file(request_id)
+
+        DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        REQUEST_FILE = DATA_DIR / "request_id.txt"
+
+        # Записываем (перезаписывает при каждом прогоне)
+        REQUEST_FILE.write_text(request_id or "", encoding="utf-8")
+        print(f"Request id saved to: {REQUEST_FILE}")
+
 
         button = wait.until(EC.element_to_be_clickable((By.ID, "notifyModalClose")))
         driver.execute_script("arguments[0].scrollIntoView(true);", button)
