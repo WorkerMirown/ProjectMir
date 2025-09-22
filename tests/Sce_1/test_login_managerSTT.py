@@ -12,7 +12,7 @@ def load_request_id():
 
 @allure.feature("Перевод заявки менеджером СТТ")
 @allure.story("Авторизация и поиск заявки")
-def test_find_request_by_id(driver):
+def test_managerSTT_stuff(driver):
     wait = WebDriverWait(driver, 15)
     request_id = load_request_id()
 
@@ -48,30 +48,176 @@ def test_find_request_by_id(driver):
             EC.visibility_of_element_located((By.XPATH, f'//div[contains(@class,"ts-dropdown")]//div[@data-value="{request_id}"]')))
         option.click()
 
-        # Жмём кнопку "Поиск"
         search_button = driver.find_element(By.CSS_SELECTOR, "#d4d99a6b8c3c6f215e76b62117a1a9f361af5913 button")
         driver.execute_script("arguments[0].scrollIntoView(true);", search_button)
         driver.execute_script("arguments[0].click();", search_button)
 
 
     with allure.step("Проверка, что заявка найдена и открыта"):
-        # ждём, пока ссылка на единственную заявку появится
+
+        expected_href = f"https://carsrv-test.st.tech/requests/{request_id}/edit"
         link = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable(
                 (By.XPATH, f"//table//a[contains(@href,'/requests/{request_id}/edit')]")
             )
         )
-
-        # получаем href для проверки
         href = link.get_attribute("href")
 
-        # проверяем, что href содержит нужный request_id
-        assert f"/requests/{request_id}/edit" in href, f"Ссылка на заявку неправильная: {href}"
-        time.sleep(3)
-        # кликаем на ссылку через JS (на случай overlay'ей или проблем с кликабельностью)
-        driver.execute_script("arguments[0].click();", link)
-        time.sleep(3)
-        # проверяем, что текущий URL соответствует ожиданиям
-        WebDriverWait(driver, 10).until(lambda d: d.current_url.endswith(f"/requests/{request_id}/edit"))
-        assert driver.current_url.endswith(
-            f"/requests/{request_id}/edit"), f"Не перешли на страницу заявки {request_id}"
+        assert href == expected_href, f"Ожидали ссылку {expected_href}, но получили {href}"
+        print("Ссылка совпала:", href)
+
+        link.click()
+        WebDriverWait(driver, 10).until(EC.url_to_be(expected_href))
+        assert driver.current_url == expected_href
+        print("Переход успешен:", driver.current_url)
+
+    with allure.step("Открыли дефект"):
+        driver.get(f'https://carsrv-test.st.tech/requests/{request_id}/defects')
+
+        table = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "table")))
+
+        first_defect_link = table.find_element(By.CSS_SELECTOR, "tbody tr td a")
+        driver.execute_script("arguments[0].scrollIntoView(true);", first_defect_link)
+        driver.execute_script("arguments[0].click();", first_defect_link)
+
+        wait.until(EC.url_matches(r".*/defect/\d+(/.*)?"))
+        print("Открыли дефект:", driver.current_url)
+
+    with allure.step("Создание мероприятия Диагностика"):
+
+        event_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@class='btn  btn-success'][.//span[normalize-space(text())='Создать мероприятие']]")))
+        event_button.click()
+        driver.find_element(By.XPATH, '//*[@id="c245bdf8c7f876a95ffe440dd8494ce0a2fa0453"]/fieldset/div/div[3]/div[1]/div').click()
+
+        even_container_diagnostic = wait.until(EC.element_to_be_clickable((By.XPATH, '//div[@role="option" and @data-value="diagnostic_sto"]')))
+        even_container_diagnostic.click()
+
+        plane_date_begin_box = wait.until(EC.element_to_be_clickable((
+            By.ID, "field-start-plan-datetime-27880608c1ce3a90b7d6f71f284bd7c1784f5864"
+        )))
+        plane_date_begin_box.click()
+
+        calendar_begin = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".flatpickr-calendar.open")))
+        today_begin = calendar_begin.find_element(By.CSS_SELECTOR, ".flatpickr-day.today")
+        today_begin.click()
+
+        plane_date_end_box = wait.until(EC.element_to_be_clickable((
+            By.ID, "field-end-plan-datetime-52a0ba72e1d162883a9abb0d62033daf3380b0d4"
+        )))
+        plane_date_end_box.click()
+
+        calendar_end = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".flatpickr-calendar.open")))
+        today_end = calendar_end.find_element(By.CSS_SELECTOR, ".flatpickr-day.today")
+        today_end.click()
+        driver.find_element(By.XPATH, '//*[@id="post-form"]/fieldset/div/div/button[2]').click()
+        driver.find_element(By.XPATH, '//*[@id="notifyModalClose"]').click()
+        print("Создано мероприятие:")
+
+    with allure.step("Закрытие мероприятия Диагностика"):
+        table = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "table")))
+
+        first_defect_link = table.find_element(By.CSS_SELECTOR, "tbody tr td a")
+        driver.execute_script("arguments[0].scrollIntoView(true);", first_defect_link)
+        driver.execute_script("arguments[0].click();", first_defect_link)
+
+        wait.until(EC.url_matches(r".*/defect/\d+(/.*)?"))
+        print("Открыли дефект:", driver.current_url)
+        fact_date_begin_box = wait.until(EC.element_to_be_clickable((
+                By.ID, "field-start-fact-datetime-00495780d10df3b9335245635c754fc567320b9d"
+            )))
+        fact_date_begin_box.click()
+
+        calendar_begin = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".flatpickr-calendar.open")))
+        today_begin = calendar_begin.find_element(By.CSS_SELECTOR, ".flatpickr-day.today")
+        today_begin.click()
+
+        fact_date_end_box = wait.until(EC.element_to_be_clickable((
+            By.ID, "field-end-fact-datetime-ea53c49d1be0dbd9d90d113c86c536348297b934"
+        )))
+        fact_date_end_box.click()
+
+        calendar_end = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".flatpickr-calendar.open")))
+        today_end = calendar_end.find_element(By.CSS_SELECTOR, ".flatpickr-day.today")
+        today_end.click()
+        driver.find_element(By.XPATH, '//*[@id="33b64acde690b1edfa20240b3ece4b9ef519cc23"]/fieldset[2]/div/div[6]/div[1]/div/div/div/label[2]').click()
+        driver.find_element(By.XPATH, '//*[@id="33b64acde690b1edfa20240b3ece4b9ef519cc23"]/fieldset[2]/div/div[6]/div[2]/div/div/div/label[2]').click()
+        driver.find_element(By.XPATH, '//*[@id="post-form"]/fieldset/div/div/button[2]').click()
+        button_end_event = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="confirmBtnModalSend"]')))
+        button_end_event.click()
+        driver.find_element(By.XPATH, '//*[@id="notifyModalClose"]').click()
+        print("Мероприятие Диагностика завершено:")
+        time.sleep(4)
+
+    with allure.step("Ремонт ТС на СТО"):
+        event_button = wait.until(EC.element_to_be_clickable(
+            (By.XPATH, "//a[@class='btn  btn-success'][.//span[normalize-space(text())='Создать мероприятие']]")))
+        event_button.click()
+        #driver.find_element(By.XPATH, '//*[@id="c245bdf8c7f876a95ffe440dd8494ce0a2fa0453"]/fieldset/div/div[3]/div[1]/div').click()
+
+        dropdown = wait.until(EC.element_to_be_clickable((
+            By.XPATH, '//*[@id="c245bdf8c7f876a95ffe440dd8494ce0a2fa0453"]/fieldset/div/div[3]/div[1]/div'
+        )))
+        dropdown.click()
+
+        even_container_repair = wait.until(EC.element_to_be_clickable((By.XPATH, '//div[@role="option" and @data-value="repair_car_sto"]')))
+        driver.execute_script("arguments[0].scrollIntoView(true);", even_container_repair)
+        time.sleep(0.5)
+        even_container_repair.click()
+
+        plane_date_begin_box = wait.until(EC.element_to_be_clickable((
+            By.ID, "field-start-plan-datetime-925e03aea49a5862299682d6d5f8912b13992af2"
+        )))
+        plane_date_begin_box.click()
+
+        calendar_begin = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".flatpickr-calendar.open")))
+        today_begin = calendar_begin.find_element(By.CSS_SELECTOR, ".flatpickr-day.today")
+        today_begin.click()
+
+        plane_date_end_box = wait.until(EC.element_to_be_clickable((
+            By.ID, "field-end-plan-datetime-de7d93c5a575e5d6ebaa4ea1db086b1081576b5b"
+        )))
+        plane_date_end_box.click()
+
+        calendar_end = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".flatpickr-calendar.open")))
+        today_end = calendar_end.find_element(By.CSS_SELECTOR, ".flatpickr-day.today")
+        today_end.click()
+        driver.find_element(By.XPATH, '//*[@id="post-form"]/fieldset/div/div/button[2]').click()
+        driver.find_element(By.XPATH, '//*[@id="notifyModalClose"]').click()
+        print("Создано мероприятие:")
+
+
+    with allure.step("Ремонт ТС на СТО"):
+
+        table = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "table")))
+        first_defect_link = table.find_element(By.CSS_SELECTOR, "tbody tr td a")
+        driver.execute_script("arguments[0].scrollIntoView(true);", first_defect_link)
+        driver.execute_script("arguments[0].click();", first_defect_link)
+
+        wait.until(EC.url_matches(r".*/defect/\d+(/.*)?"))
+        print("Открыли дефект:", driver.current_url)
+        fact_date_begin_box = wait.until(EC.element_to_be_clickable((
+                By.ID, "field-start-fact-datetime-00495780d10df3b9335245635c754fc567320b9d"
+            )))
+        fact_date_begin_box.click()
+        time.sleep(0.5)
+
+        calendar_begin = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".flatpickr-calendar.open")))
+        today_begin = calendar_begin.find_element(By.CSS_SELECTOR, ".flatpickr-day.today")
+        today_begin.click()
+
+        fact_date_end_box = wait.until(EC.element_to_be_clickable((
+            By.ID, "field-end-fact-datetime-ea53c49d1be0dbd9d90d113c86c536348297b934"
+        )))
+        fact_date_end_box.click()
+        calendar_end = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".flatpickr-calendar.open")))
+        today_end = calendar_end.find_element(By.CSS_SELECTOR, ".flatpickr-day.today")
+        today_end.click()
+        driver.find_element(By.XPATH, '//*[@id="33b64acde690b1edfa20240b3ece4b9ef519cc23"]/fieldset[2]/div/div[6]/div/div/label[2]').click()
+        driver.find_element(By.XPATH, '//*[@id="post-form"]/fieldset/div/div/button[2]').click()
+        button_end_event = wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="confirmBtnModalSend"]')))
+        button_end_event.click()
+        driver.find_element(By.XPATH, '//*[@id="notifyModalClose"]').click()
+        print("Мероприятие Ремонт завершено:")
+
+        driver.get(f'https://carsrv-test.st.tech/requests/{request_id}')
+        time.sleep(4)

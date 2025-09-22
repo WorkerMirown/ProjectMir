@@ -39,7 +39,7 @@ def test_login_and_create_request(driver, save_request_id_file):
         select_custom_dropdown(
             driver,
             '//*[@id="088fa587fbac295705e7e561d778761bd353d683"]/fieldset[2]/div[2]/div/fieldset/div/div[1]/div/div/div/div/div[1]',
-            "//div[contains(@class,'option active') and normalize-space(text())='777']"
+            "//div[contains(@class,'option ') and normalize-space(text())='777']"
         )
 
         driver.find_element(By.ID, "field-mileage-fb852198353ae70c02bfba57c5263d5a61ed9f8d").send_keys("5991")
@@ -77,7 +77,6 @@ def test_login_and_create_request(driver, save_request_id_file):
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         REQUEST_FILE = DATA_DIR / "request_id.txt"
 
-        # Записываем (перезаписывает при каждом прогоне)
         REQUEST_FILE.write_text(request_id or "", encoding="utf-8")
         print(f"Request id saved to: {REQUEST_FILE}")
 
