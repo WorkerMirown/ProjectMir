@@ -47,3 +47,15 @@ class BasePage:
         """Ожидает, пока URL будет содержать часть строки"""
         self.wait.until(lambda d: url_part in d.current_url)
 
+    def wait_for_url_match(self, pattern, timeout=None):
+        """
+        Ожидает, что текущий URL совпадёт с переданным регулярным выражением.
+        :param pattern: строка (regex), например r".*/defect/\d+(/.*)?"
+        :param timeout: кастомный timeout (по умолчанию общий из self.wait)
+        """
+        if timeout:
+            from selenium.webdriver.support.ui import WebDriverWait
+            WebDriverWait(self.driver, timeout).until(EC.url_matches(pattern))
+        else:
+            self.wait.until(EC.url_matches(pattern))
+        return self.driver.current_url

@@ -2,25 +2,50 @@ import pytest
 from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
-import os
 
 BASE = Path(__file__).parent            # это tests/
 DATA_DIR = BASE / "data"
 REQUEST_FILE = DATA_DIR / "request_id.txt"
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--headless",
+        action="store_true",
+        default=False,
+        help="Run browser in headless mode"
+    )
+
 @pytest.fixture
-def driver():
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+def driver(pytestconfig):
+    chrome_options = Options()
+    if pytestconfig.getoption("--headless"):
+        chrome_options.add_argument("--headless=new")   # новый headless режим
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--window-size=1920,1080")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+
+    driver = webdriver.Chrome(
+        service=Service(ChromeDriverManager().install()),
+        options=chrome_options
+    )
     driver.implicitly_wait(10)
-    driver.maximize_window()
+
+    # maximize не нужен в headless
+    if not pytestconfig.getoption("--headless"):
+        driver.maximize_window()
+
     yield driver
     driver.quit()
+
 
 @pytest.fixture(scope="session", autouse=False)
 def data_dir():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     return DATA_DIR
+
 
 @pytest.fixture
 def save_request_id_file(data_dir):
@@ -29,6 +54,7 @@ def save_request_id_file(data_dir):
         p.write_text(request_id, encoding="utf-8")
         return p
     return _save
+
 
 @pytest.fixture
 def load_request_id_file(data_dir):

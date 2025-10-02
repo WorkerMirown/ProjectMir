@@ -19,18 +19,22 @@ class RequestPage(BasePage):
     DEFECT_TITLE_ID = 'field-title-ebf918a9a9e04da5679f0433b2244bba9f4238eb'
     SERVICE_POINT_CONTAINER_XPATH = '//*[@id="post-form"]/fieldset/div/div[5]/div/div/div[1]'
     SERVICE_POINT_OPTION_XPATH = '//div[contains(@class,"ts-dropdown-content")]//div[@data-value="1"]'
+    DEFECT_LINK_CSS = "tbody tr td a"
 
     # Локаторы
     SEND_STO_BUTTON_XPATH = '//button[.//span[contains(text(), "Направить в СТО")]]'
-    EVENT_BUTTON_XPATH = '//*[@id="app"]/div/div/div[1]/div/nav/ul/li[2]/div/a'
     EVENT_TYPE_XPATH = '//*[@id="c245bdf8c7f876a95ffe440dd8494ce0a2fa0453"]/fieldset/div/div[3]/div[1]/div'
     EVENT_OPTION_DIAGNOSTIC_XPATH = '//div[@role="option" and @data-value="diagnostic_sto"]'
     START_DATE_ID = "field-start-plan-datetime-27880608c1ce3a90b7d6f71f284bd7c1784f5864"
     END_DATE_ID = "field-end-plan-datetime-52a0ba72e1d162883a9abb0d62033daf3380b0d4"
-    SAVE_BUTTON_XPATH = '//*[@id="post-form"]/fieldset/div/div/button[2]'
 
     CALENDAR_CSS = ".flatpickr-calendar.open"
     TODAY_CSS = ".flatpickr-day.today"
+    #Локаторы Ивента
+    EVENT_BUTTON_XPATH = "//a[@class='btn  btn-success'][.//span[normalize-space(text())='Создать мероприятие']]"
+    SAVE_BUTTON_XPATH = '//*[@id="post-form"]/fieldset/div/div/button[2]'
+    CONFIRM_BTN_XPATH = '//*[@id="confirmBtnModalSend"]'
+    NOTIFY_CLOSE_XPATH = '//*[@id="notifyModalClose"]'
 
     # Файлы
     FILE_INPUT_ID = "field-doc-files-df1bd9fe0dd490dfc71e27f75d7be3a830e73b8b"
@@ -108,37 +112,62 @@ class RequestPage(BasePage):
         self.click(button)
         self.close_notification()
         time.sleep(1)
-    @allure.step("Создаём событие диагностики")
-    def create_diagnostic_event(self):
-        try:
-            self.click(By.XPATH, self.EVENT_BUTTON_XPATH)
-            self.click(By.XPATH, self.EVENT_TYPE_XPATH)
-            self.click(By.XPATH, self.EVENT_OPTION_DIAGNOSTIC_XPATH)
 
-            # Дата начала
-            self.click(By.ID, self.START_DATE_ID)
-            calendar_begin = self.find(By.CSS_SELECTOR, self.CALENDAR_CSS)
-            calendar_begin.find_element(By.CSS_SELECTOR, self.TODAY_CSS).click()
-
-            # Дата окончания
-            self.click(By.ID, self.END_DATE_ID)
-            calendar_end = self.find(By.CSS_SELECTOR, self.CALENDAR_CSS)
-            calendar_end.find_element(By.CSS_SELECTOR, self.TODAY_CSS).click()
-
-            # Сохранение
-            self.click(By.XPATH, self.SAVE_BUTTON_XPATH)
-
-            allure.attach("Событие диагностики успешно создано",
-                          name="Создание события",
-                          attachment_type=allure.attachment_type.TEXT)
-            return self
-        except Exception as e:
-            allure.attach(f"Ошибка при создании события диагностики: {str(e)}",
-                          name="Ошибка события",
-                          attachment_type=allure.attachment_type.TEXT)
-            raise
-
-    @allure.step("Открытие дефекта")
-    def open_defects_page(self, request_id):
+    @allure.step("Открываем первый дефект в заявке")
+    def open_first_defect(self, request_id: str):
         self.driver.get(f'https://carsrv-test.st.tech/requests/{request_id}/defects')
+        table = self.find(By.CSS_SELECTOR, "table")
+        defect_link = table.find_element(By.CSS_SELECTOR, self.DEFECT_LINK_CSS)
+        self.driver.execute_script("arguments[0].scrollIntoView(true);", defect_link)
+        self.driver.execute_script("arguments[0].click();", defect_link)
+        self.wait_for_url_match(r".*/defect/\d+(/.*)?")
+        allure.attach(self.driver.current_url, "URL дефекта")
+
+    def pick_today_date(self, by, locator):
+        date_box = self.find_clickable(by, locator)
+        date_box.click()
+        calendar = self.find(By.CSS_SELECTOR, ".flatpickr-calendar.open")
+        today = calendar.find_element(By.CSS_SELECTOR, ".flatpickr-day.today")
+        today.click()
+        time.sleep(0.5)
+
+    @allure.step("Создаём мероприятие: {event_type}")
+    def create_event(self, event_type: str, plan_start_id: str, plan_end_id: str, option_value: str):
+        self.click(self.find_clickable(By.XPATH, self.EVENT_BUTTON_XPATH))
+        dropdown = self.find_clickable(By.XPATH,
+                                       '//*[@id="c245bdf8c7f876a95ffe440dd8494ce0a2fa0453"]/fieldset/div/div[3]/div[1]/div')
+        dropdown.click()
+        option = self.find_clickable(By.XPATH, f'//div[@role="option" and @data-value="{option_value}"]')
+        self.click(option)
+
+        self.pick_today_date(By.ID, plan_start_id)
+        self.pick_today_date(By.ID, plan_end_id)
+
+        self.click(self.find(By.XPATH, self.SAVE_BUTTON_XPATH))
+        self.close_notification()
+        allure.attach(event_type, "Мероприятие создано")
+
+    @allure.step("Закрываем мероприятие: {event_type}")
+    def close_event(self, event_type: str, fact_start_id: str, fact_end_id: str, checkbox_xpaths: list):
+
+        table = self.find(By.CSS_SELECTOR, "#post-form div.table-responsive table")
+        first_event_link = table.find_element(
+            By.XPATH, ".//tbody/tr/td[1]/div/div/a"
+        )
+
+        self.click(first_event_link)
+        self.wait_for_url_match(r".*/event/\d+(/.*)?")
+        print("Открыто мероприятие:", self.driver.current_url)
+
+
+        self.pick_today_date(By.ID, fact_start_id)
+        self.pick_today_date(By.ID, fact_end_id)
+
+        for xpath in checkbox_xpaths:
+            self.click(self.find(By.XPATH, xpath))
+
+        self.click(self.find(By.XPATH, self.SAVE_BUTTON_XPATH))
+        self.click(self.find(By.XPATH, self.CONFIRM_BTN_XPATH))
+        self.close_notification()
+        allure.attach(event_type, "Мероприятие закрыто")
 
