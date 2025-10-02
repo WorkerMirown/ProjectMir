@@ -35,7 +35,17 @@ class RequestPage(BasePage):
     SAVE_BUTTON_XPATH = '//*[@id="post-form"]/fieldset/div/div/button[2]'
     CONFIRM_BTN_XPATH = '//*[@id="confirmBtnModalSend"]'
     NOTIFY_CLOSE_XPATH = '//*[@id="notifyModalClose"]'
-
+    EVENT_TYPES = {
+        "diagnostics": "Выезд в парк для диагностики (ремонта)",
+        "delivery_car_to_sto": "Предоставление ТС на СТО",
+        "delivery_car_by_sto": "Эвакуация ТС на СТО силами СТО",
+        "diagnostic_sto": "Диагностика ТС на СТО",
+        "order_parts": "Заказ запасных частей",
+        "request_for_approval_of_repair": "Согласование статуса ремонта",
+        "repair": "Выезд в парк для проведения ремонта",
+        "repair_car_sto": "Ремонт ТС на СТО",
+        "delivery_car_to_client": "Выдача ТС клиенту"
+    }
     # Файлы
     FILE_INPUT_ID = "field-doc-files-df1bd9fe0dd490dfc71e27f75d7be3a830e73b8b"
     @allure.step("Закрываем уведомление")
@@ -131,43 +141,57 @@ class RequestPage(BasePage):
         today.click()
         time.sleep(0.5)
 
-    @allure.step("Создаём мероприятие: {event_type}")
+    @allure.step("Создаём мероприятие")
     def create_event(self, event_type: str, plan_start_id: str, plan_end_id: str, option_value: str):
-        self.click(self.find_clickable(By.XPATH, self.EVENT_BUTTON_XPATH))
-        dropdown = self.find_clickable(By.XPATH,
-                                       '//*[@id="c245bdf8c7f876a95ffe440dd8494ce0a2fa0453"]/fieldset/div/div[3]/div[1]/div')
-        dropdown.click()
-        option = self.find_clickable(By.XPATH, f'//div[@role="option" and @data-value="{option_value}"]')
-        self.click(option)
 
-        self.pick_today_date(By.ID, plan_start_id)
-        self.pick_today_date(By.ID, plan_end_id)
+        if event_type not in self.EVENT_TYPES:
+            raise ValueError(f"Unknown event_type '{event_type}'. Allowed: {list(self.EVENT_TYPES.keys())}")
+        option_value = event_type
+        option_name = self.EVENT_TYPES[event_type]
+        with allure.step(f"Создание мероприятия: {option_name}"):
 
-        self.click(self.find(By.XPATH, self.SAVE_BUTTON_XPATH))
-        self.close_notification()
-        allure.attach(event_type, "Мероприятие создано")
+            self.click(self.find_clickable(By.XPATH, self.EVENT_BUTTON_XPATH))
+            dropdown = self.find_clickable(By.XPATH,
+                                           '//*[@id="c245bdf8c7f876a95ffe440dd8494ce0a2fa0453"]/fieldset/div/div[3]/div[1]/div')
+            dropdown.click()
 
-    @allure.step("Закрываем мероприятие: {event_type}")
+            option = self.find_clickable(By.XPATH, f'//div[@role="option" and @data-value="{option_value}"]')
+            self.click(option)
+
+            self.pick_today_date(By.ID, plan_start_id)
+            self.pick_today_date(By.ID, plan_end_id)
+
+            self.click(self.find(By.XPATH, self.SAVE_BUTTON_XPATH))
+            self.close_notification()
+            allure.attach(event_type, "Мероприятие создано")
+
+    @allure.step("Закрываем мероприятие")
     def close_event(self, event_type: str, fact_start_id: str, fact_end_id: str, checkbox_xpaths: list):
 
-        table = self.find(By.CSS_SELECTOR, "#post-form div.table-responsive table")
-        first_event_link = table.find_element(
-            By.XPATH, ".//tbody/tr/td[1]/div/div/a"
-        )
 
-        self.click(first_event_link)
-        self.wait_for_url_match(r".*/event/\d+(/.*)?")
-        print("Открыто мероприятие:", self.driver.current_url)
+        if event_type not in self.EVENT_TYPES:
+            raise ValueError(f"Unknown event_type '{event_type}'. Allowed: {list(self.EVENT_TYPES.keys())}")
 
+        option_name = self.EVENT_TYPES[event_type]
+        with allure.step(f"Закрытие мероприятия: {option_name}"):
 
-        self.pick_today_date(By.ID, fact_start_id)
-        self.pick_today_date(By.ID, fact_end_id)
+            table = self.find(By.CSS_SELECTOR, "#post-form div.table-responsive table")
+            first_event_link = table.find_element(
+                By.XPATH, ".//tbody/tr/td[1]/div/div/a"
+            )
 
-        for xpath in checkbox_xpaths:
-            self.click(self.find(By.XPATH, xpath))
+            self.click(first_event_link)
+            self.wait_for_url_match(r".*/event/\d+(/.*)?")
+            print("Открыто мероприятие:", self.driver.current_url)
 
-        self.click(self.find(By.XPATH, self.SAVE_BUTTON_XPATH))
-        self.click(self.find(By.XPATH, self.CONFIRM_BTN_XPATH))
-        self.close_notification()
-        allure.attach(event_type, "Мероприятие закрыто")
+            self.pick_today_date(By.ID, fact_start_id)
+            self.pick_today_date(By.ID, fact_end_id)
+
+            for xpath in checkbox_xpaths:
+                self.click(self.find(By.XPATH, xpath))
+
+            self.click(self.find(By.XPATH, self.SAVE_BUTTON_XPATH))
+            self.click(self.find(By.XPATH, self.CONFIRM_BTN_XPATH))
+            self.close_notification()
+            allure.attach(event_type, "Мероприятие закрыто")
 

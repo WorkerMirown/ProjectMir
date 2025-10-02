@@ -33,19 +33,19 @@ def test_managerSTT_stuff(driver):
         main_page.open_request_by_id(request_id)
         request_page.open_first_defect(request_id)
 
-    request_page.create_event("Диагностика", "field-start-plan-datetime-27880608c1ce3a90b7d6f71f284bd7c1784f5864",
+    request_page.create_event("diagnostic_sto", "field-start-plan-datetime-27880608c1ce3a90b7d6f71f284bd7c1784f5864",
                               "field-end-plan-datetime-52a0ba72e1d162883a9abb0d62033daf3380b0d4", "diagnostic_sto")
-    request_page.close_event("Диагностика",
+    request_page.close_event("diagnostic_sto",
                              "field-start-fact-datetime-00495780d10df3b9335245635c754fc567320b9d",
                              "field-end-fact-datetime-ea53c49d1be0dbd9d90d113c86c536348297b934",
                              [
                                  '//*[@id="33b64acde690b1edfa20240b3ece4b9ef519cc23"]/fieldset[2]/div/div[6]/div[1]/div/div/div/label[2]',
                                  '//*[@id="33b64acde690b1edfa20240b3ece4b9ef519cc23"]/fieldset[2]/div/div[6]/div[2]/div/div/div/label[2]'])
 
-    request_page.create_event("Ремонт ТС",
+    request_page.create_event("repair_car_sto",
                               "field-start-plan-datetime-925e03aea49a5862299682d6d5f8912b13992af2",
                               "field-end-plan-datetime-de7d93c5a575e5d6ebaa4ea1db086b1081576b5b", "repair_car_sto")
-    request_page.close_event("Ремонт ТС",
+    request_page.close_event("repair_car_sto",
                              "field-start-fact-datetime-00495780d10df3b9335245635c754fc567320b9d",
                              "field-end-fact-datetime-ea53c49d1be0dbd9d90d113c86c536348297b934",
                              [
