@@ -8,7 +8,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from ..helpers import select_custom_dropdown
 from ..pages.auth_page import AuthPage
-from ..pages.requset_form_page import RequestFormPage
+from ..pages.request_form_page import RequestFormPage
 from ..pages.request_page import RequestPage
 
 @allure.feature("Создание заявки клиентом")

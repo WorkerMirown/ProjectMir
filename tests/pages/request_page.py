@@ -127,25 +127,43 @@ class RequestPage(BasePage):
     def open_first_defect(self, request_id: str):
         self.driver.get(f'https://carsrv-test.st.tech/requests/{request_id}/defects')
         table = self.find(By.CSS_SELECTOR, "table")
-        defect_link = table.find_element(By.CSS_SELECTOR, self.DEFECT_LINK_CSS)
-        self.driver.execute_script("arguments[0].scrollIntoView(true);", defect_link)
-        self.driver.execute_script("arguments[0].click();", defect_link)
+        defect_links = table.find_elements(By.CSS_SELECTOR, self.DEFECT_LINK_CSS)
+        if not defect_links:
+            raise Exception("Нет дефектов в таблице")
+        defect_link = defect_links[-1]
+        self.click(defect_link)
         self.wait_for_url_match(r".*/defect/\d+(/.*)?")
         allure.attach(self.driver.current_url, "URL дефекта")
 
-    def pick_today_date(self, by, locator):
-        date_box = self.find_clickable(by, locator)
-        date_box.click()
-        calendar = self.find(By.CSS_SELECTOR, ".flatpickr-calendar.open")
-        today = calendar.find_element(By.CSS_SELECTOR, ".flatpickr-day.today")
-        today.click()
-        time.sleep(0.5)
+    def pick_today_date(self, by, locator, retries=3):
+        for attempt in range(1, retries + 1):
+            date_box = self.find_clickable(by, locator)
+            self.driver.execute_script("arguments[0].scrollIntoView(true);", date_box)
+            date_box.click()
+            time.sleep(0.5)
+
+            calendar = self.find(By.CSS_SELECTOR, ".flatpickr-calendar.open")
+            today = calendar.find_element(By.CSS_SELECTOR, ".flatpickr-day.today")
+            self.driver.execute_script("arguments[0].scrollIntoView(true);", today)
+            time.sleep(0.5)
+            today.click()
+            time.sleep(0.5)
+            date_box = self.find_clickable(by, locator)
+            value = date_box.get_attribute("value")
+            if value.strip():
+                return value
+
+            self.driver.execute_script("arguments[0].value = '';", date_box)
+            time.sleep(0.3)
+
+        raise Exception(f"Не удалось выбрать today в календаре после {retries} попыток")
 
     @allure.step("Создаём мероприятие")
-    def create_event(self, event_type: str, plan_start_id: str, plan_end_id: str, option_value: str):
+    def create_event(self, event_type: str, plan_start_id: str, plan_end_id: str, option_value: str, sur_number: str = None):
 
-        if event_type not in self.EVENT_TYPES:
-            raise ValueError(f"Unknown event_type '{event_type}'. Allowed: {list(self.EVENT_TYPES.keys())}")
+        # if event_type not in self.EVENT_TYPES:
+        #     raise ValueError(f"Unknown event_type '{event_type}'. Allowed: {list(self.EVENT_TYPES.keys())}")
+
         option_value = event_type
         option_name = self.EVENT_TYPES[event_type]
         with allure.step(f"Создание мероприятия: {option_name}"):
@@ -158,8 +176,12 @@ class RequestPage(BasePage):
             option = self.find_clickable(By.XPATH, f'//div[@role="option" and @data-value="{option_value}"]')
             self.click(option)
 
-            self.pick_today_date(By.ID, plan_start_id)
-            self.pick_today_date(By.ID, plan_end_id)
+            if option_value == "order_parts":
+                    self.fill_order_parts(plan_start_id, plan_end_id, sur_number)
+                    time.sleep(1)
+            else:
+                self.pick_today_date(By.XPATH, plan_start_id)
+                self.pick_today_date(By.XPATH, plan_end_id)
 
             self.click(self.find(By.XPATH, self.SAVE_BUTTON_XPATH))
             self.close_notification()
@@ -167,25 +189,35 @@ class RequestPage(BasePage):
 
     @allure.step("Закрываем мероприятие")
     def close_event(self, event_type: str, fact_start_id: str, fact_end_id: str, checkbox_xpaths: list):
-
-
-        if event_type not in self.EVENT_TYPES:
-            raise ValueError(f"Unknown event_type '{event_type}'. Allowed: {list(self.EVENT_TYPES.keys())}")
-
         option_name = self.EVENT_TYPES[event_type]
+
         with allure.step(f"Закрытие мероприятия: {option_name}"):
+            # Находим таблицу на странице дефекта
+            table = self.find(By.CSS_SELECTOR, "div.table-responsive table")
+            rows = table.find_elements(By.TAG_NAME, "tr")
 
-            table = self.find(By.CSS_SELECTOR, "#post-form div.table-responsive table")
-            first_event_link = table.find_element(
-                By.XPATH, ".//tbody/tr/td[1]/div/div/a"
-            )
+            event_link = None
+            for row in rows:
+                try:
+                    event_cell = row.find_element(By.CSS_SELECTOR, "td[data-column='type'] span")
+                    if event_cell.text.strip() == option_name:
+                        event_link = row.find_element(By.CSS_SELECTOR, "td[data-column='type'] a")
+                        break
+                except Exception:
+                    continue
 
-            self.click(first_event_link)
-            self.wait_for_url_match(r".*/event/\d+(/.*)?")
+            if not event_link:
+                raise Exception(f"Мероприятие '{option_name}' не найдено в таблице")
+
+            # Переход на страницу редактирования события
+            self.driver.execute_script("arguments[0].scrollIntoView(true);", event_link)
+            event_link.click()
+            self.wait_for_url_match(r".*/event/\d+/edit")
             print("Открыто мероприятие:", self.driver.current_url)
 
-            self.pick_today_date(By.ID, fact_start_id)
-            self.pick_today_date(By.ID, fact_end_id)
+            # Теперь ставим даты и галочки
+            self.pick_today_date(By.XPATH, fact_start_id)
+            self.pick_today_date(By.XPATH, fact_end_id)
 
             for xpath in checkbox_xpaths:
                 self.click(self.find(By.XPATH, xpath))
@@ -195,3 +227,22 @@ class RequestPage(BasePage):
             self.close_notification()
             allure.attach(event_type, "Мероприятие закрыто")
 
+    #Ивентовые методы
+
+    def fill_order_parts(self, plan_start_id1: str, plan_end_id1: str, sur_number: str = None):
+
+        radio_button = self.find(By.ID, "field-self-bought-parts-9f8f15a79557533ed9e84b3be152ce6ced3de0fa")
+        sur_number_field = self.find(By.ID, "field-sur-number-d1bc07b7546eabd54cedf42d5aa88edc4cc7e691")
+        self.pick_today_date(By.XPATH, plan_end_id1)
+
+        if sur_number is None:
+            if not radio_button.is_selected():
+                radio_button.click()
+
+            time.sleep(0.5)
+        else:
+            sur_number_field.clear()
+            sur_number_field.send_keys(sur_number)
+            self.pick_today_date(By.XPATH, plan_start_id1)
+            self.pick_today_date(By.XPATH, plan_end_id1)
+            time.sleep(0.5)

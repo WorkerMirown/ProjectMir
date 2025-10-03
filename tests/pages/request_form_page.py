@@ -23,6 +23,15 @@ class RequestFormPage(BasePage):
 
     NOTIFY_MODAL_CLOSE_ID = '//*[@id="notifyModalClose"]'
 
+
+    STATUS_DROPDOWN_XPATH = '//*[@id="088fa587fbac295705e7e561d778761bd353d683"]/fieldset/div[2]/div/fieldset/div/div[3]/div[1]/div/div/div/div[1]'
+    STATUS_OPTION_TEMPLATE = "//div[@data-value='{value}']"
+
+    STATUS_MAP = {
+        "Эксплуатируется": "operated",
+        "В простое": "in_idle_time"
+    }
+
     @allure.step("Открываем форму создания заявки")
     def open_form(self):
         try:
@@ -64,12 +73,40 @@ class RequestFormPage(BasePage):
                           name="Ошибка заполнения авто", attachment_type=allure.attachment_type.TEXT)
             raise
 
-    # with allure.step("Выбор состояния ТС"):
-    #     select_custom_dropdown(
-    #         driver,
-    #         '//*[@id="088fa587fbac295705e7e561d778761bd353d683"]/fieldset/div[2]/div/fieldset/div/div[3]/div[1]/div/div/div/div[1]',
-    #         "//div[@data-value='operated']"
-    #     )
+    @allure.step("Изменение статуса ТС")
+    def status_tc_change(self, status_name: str = "В простое"):
+
+        try:
+
+            status_value = self.STATUS_MAP.get(status_name, status_name)
+
+            dropdown = self.find(By.XPATH, self.STATUS_DROPDOWN_XPATH)
+            self.driver.execute_script("arguments[0].scrollIntoView(true);", dropdown)
+
+            self.find_clickable(By.XPATH, self.STATUS_DROPDOWN_XPATH)
+            try:
+                dropdown.click()
+            except Exception:
+                self.driver.execute_script("arguments[0].click();", dropdown)
+
+            option_xpath = self.STATUS_OPTION_TEMPLATE.format(value=status_value)
+            option = self.find(By.XPATH, option_xpath)
+            self.driver.execute_script("arguments[0].scrollIntoView(true);", option)
+            try:
+                option.click()
+            except Exception:
+                self.driver.execute_script("arguments[0].click();", option)
+
+            allure.attach(f"Состояние ТС выбрано: {status_name} ({status_value})",
+                          name="ТС состояние",
+                          attachment_type=allure.attachment_type.TEXT)
+
+        except Exception as e:
+            allure.attach(f"Ошибка при выборе состояния ТС: {str(e)}",
+                          name="Ошибка выбора состояния ТС",
+                          attachment_type=allure.attachment_type.TEXT)
+            raise
+
     @allure.step("Прикрепляем файл в заявку")
     def add_file_request_form(self):
         try:
@@ -79,7 +116,7 @@ class RequestFormPage(BasePage):
             file_input = self.driver.find_element(By.XPATH,
                                                   '//*[@id="field-doc-files-df1bd9fe0dd490dfc71e27f75d7be3a830e73b8b"]')
             file_input.send_keys(str(file_path))
-            time.sleep(1)
+            time.sleep(1.5)
 
             files_count = self.driver.execute_script(
                 "return arguments[0].files.length;", file_input
