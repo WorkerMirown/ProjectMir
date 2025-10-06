@@ -135,9 +135,10 @@ class RequestPage(BasePage):
         self.wait_for_url_match(r".*/defect/\d+(/.*)?")
         allure.attach(self.driver.current_url, "URL дефекта")
 
+
     def pick_today_date(self, by, locator, retries=3):
         for attempt in range(1, retries + 1):
-            date_box = self.find_clickable(by, locator)
+            date_box = self.find(by, locator)
             self.driver.execute_script("arguments[0].scrollIntoView(true);", date_box)
             date_box.click()
             time.sleep(0.5)
@@ -166,9 +167,10 @@ class RequestPage(BasePage):
 
         option_value = event_type
         option_name = self.EVENT_TYPES[event_type]
+
         with allure.step(f"Создание мероприятия: {option_name}"):
 
-            self.click(self.find_clickable(By.XPATH, self.EVENT_BUTTON_XPATH))
+            self.find_clickable(By.XPATH, self.EVENT_BUTTON_XPATH ).click()
             dropdown = self.find_clickable(By.XPATH,
                                            '//*[@id="c245bdf8c7f876a95ffe440dd8494ce0a2fa0453"]/fieldset/div/div[3]/div[1]/div')
             dropdown.click()
@@ -192,7 +194,7 @@ class RequestPage(BasePage):
         option_name = self.EVENT_TYPES[event_type]
 
         with allure.step(f"Закрытие мероприятия: {option_name}"):
-            # Находим таблицу на странице дефекта
+
             table = self.find(By.CSS_SELECTOR, "div.table-responsive table")
             rows = table.find_elements(By.TAG_NAME, "tr")
 
@@ -215,12 +217,25 @@ class RequestPage(BasePage):
             self.wait_for_url_match(r".*/event/\d+/edit")
             print("Открыто мероприятие:", self.driver.current_url)
 
-            # Теперь ставим даты и галочки
             self.pick_today_date(By.XPATH, fact_start_id)
+            time.sleep(2)
             self.pick_today_date(By.XPATH, fact_end_id)
 
-            for xpath in checkbox_xpaths:
-                self.click(self.find(By.XPATH, xpath))
+
+
+            with allure.step("Выбор радиокнопок 'Да'"):
+
+                    radiobutton_groups = self.driver.find_elements(By.CSS_SELECTOR,
+                                                                   "div[data-controller='radiobutton']")
+                    for group in radiobutton_groups:
+                        yes_option = group.find_elements(By.CSS_SELECTOR, "input[type='radio'][value='1']")
+                        if yes_option:
+                            radio = yes_option[0]
+                            self.driver.execute_script("arguments[0].scrollIntoView(true);", radio)
+                            self.click(radio)
+                            time.sleep(0.1)
+                    allure.attach("Все радиокнопки 'Да' выбраны", "radio_buttons")
+
 
             self.click(self.find(By.XPATH, self.SAVE_BUTTON_XPATH))
             self.click(self.find(By.XPATH, self.CONFIRM_BTN_XPATH))
