@@ -1,14 +1,19 @@
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+import re
 
 class BasePage:
-    def __init__(self, driver, timeout=15):
+    def __init__(self, driver, base_url: str =None , timeout=15):
         self.driver = driver
         self.wait = WebDriverWait(driver, timeout)
+        self.base_url = base_url
 
     def open(self, url: str):
-
+        if not url.startswith("http"):
+            # if not self.base_url:
+            #     raise ValueError("Base URL is not set in BasePage")
+            url = self.base_url + url
         self.driver.get(url)
 
     def find(self, by, value):

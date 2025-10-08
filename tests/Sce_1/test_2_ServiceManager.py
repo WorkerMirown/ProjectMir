@@ -13,11 +13,11 @@ def load_request_id():
 
 @allure.feature("Обработка заявки Сервис менеджером")
 @allure.story("Авторизация и поиск заявки")
-def test_ServiceManager(driver):
+def test_ServiceManager(driver, base_url):
         request_id = load_request_id()
-        main_page = MainPage(driver)
-        requst_page = RequestPage(driver)
-        auth_page = AuthPage(driver)
+        main_page = MainPage(driver, base_url)
+        request_page = RequestPage(driver, base_url)
+        auth_page = AuthPage(driver, base_url)
 
         try:
             auth_page.login(email="workerismirown@gmail.com", password="eA123!@#")
@@ -25,10 +25,8 @@ def test_ServiceManager(driver):
             main_page.search_request(request_id)
             main_page.open_request_by_id(request_id)
 
-            requst_page.create_defect(request_id)
-            # Отправка заявки в СТТ
-            requst_page.send_to_sto(request_id)
-
+            request_page.create_defect(request_id)
+            request_page.send_to_sto(request_id)
             # Создание события диагностики
             #requst_page.create_diagnostic_event()
 

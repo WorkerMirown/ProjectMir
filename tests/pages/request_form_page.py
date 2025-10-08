@@ -7,7 +7,8 @@ from ..helpers import select_custom_dropdown
 
 
 class RequestFormPage(BasePage):
-
+    def __init__(self, driver, base_url):
+        super().__init__(driver, base_url)
 
     BRANCH_DROPDOWN_XPATH = '//*[@id="088fa587fbac295705e7e561d778761bd353d683"]/fieldset[1]/div[2]/div/fieldset/div/div[2]/div[2]/div/div'
     BRANCH_OPTION_XPATH = "//div[contains(@class,'option') and normalize-space(text())='Филиал тест']"
@@ -35,7 +36,7 @@ class RequestFormPage(BasePage):
     @allure.step("Открываем форму создания заявки")
     def open_form(self):
         try:
-            self.open("https://carsrv-test.st.tech/requests/request_form")
+            self.open("/requests/request_form")
         except Exception as e:
             allure.attach(f"Ошибка при открытии формы: {str(e)}",
                           name="Ошибка", attachment_type=allure.attachment_type.TEXT)

@@ -1,5 +1,4 @@
 import time
-
 import allure
 from selenium.webdriver.common.by import By
 from ..pages.base_page import BasePage
@@ -11,11 +10,14 @@ class AuthPage(BasePage):
     PASSWORD = (By.CSS_SELECTOR, '#field-password-6e375a8c5cee60d33bd060d76dc97dca59fb6920')
     LOGIN_BUTTON = (By.ID, "button-login")
 
+    def __init__(self, driver, base_url):
+        super().__init__(driver)
+        self.base_url = base_url
 
     @allure.step("Авторизация:")
     def login(self, email: str, password: str):
 
-        self.open("https://carsrv-test.st.tech/login")
+        self.open(f"{self.base_url}/login")
         self.send_keys(self.find(*self.EMAIL), email)
         self.send_keys(self.find(*self.PASSWORD), password)
         self.click(self.find_clickable(*self.LOGIN_BUTTON))
@@ -26,7 +28,7 @@ class AuthPage(BasePage):
                     "Авторизация успешна",
                     attachment_type=allure.attachment_type.TEXT
                 )
-            self.open("https://carsrv-test.st.tech/main")
+            self.open(f"{self.base_url}/main")
         except Exception as e:
             allure.attach(
                 f"Авторизация не прошла. Ошибка: {str(e)}",

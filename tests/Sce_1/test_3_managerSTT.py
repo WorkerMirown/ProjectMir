@@ -15,11 +15,11 @@ def load_request_id():
 
 @allure.feature("Перевод заявки менеджером СТТ")
 @allure.story("Авторизация и поиск заявки")
-def test_managerSTT_stuff(driver):
+def test_managerSTT_stuff(driver, base_url):
 
-    main_page = MainPage(driver)
-    request_page = RequestPage(driver)
-    auth_page = AuthPage(driver)
+    main_page = MainPage(driver, base_url)
+    request_page = RequestPage(driver, base_url)
+    auth_page = AuthPage(driver,base_url)
 
     wait = WebDriverWait(driver, 15)
     request_id = load_request_id()

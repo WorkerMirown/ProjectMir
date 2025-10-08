@@ -13,11 +13,11 @@ from ..pages.request_page import RequestPage
 
 @allure.feature("Создание заявки клиентом")
 @allure.story("Авторизация и создание новой заявки")
-def test_login_and_create_request(driver, save_request_id_file):
+def test_login_and_create_request(driver, save_request_id_file, base_url):
     wait = WebDriverWait(driver, 15)
-    auth_page = AuthPage(driver)
-    request_page_form = RequestFormPage(driver)
-    request_page = RequestPage(driver)
+    auth_page = AuthPage(driver, base_url)
+    request_page_form = RequestFormPage(driver, base_url)
+    request_page = RequestPage(driver, base_url)
 
     auth_page.login(
         email ="clientautomationtester@mail.ru",

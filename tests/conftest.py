@@ -16,12 +16,19 @@ def pytest_addoption(parser):
         default=False,
         help="Run browser in headless mode"
     )
+    parser.addoption(
+        "--base-url",
+        action="store",
+        default="test",
+        help="Environment to run tests against: test/stage/prod"
+    )
+
 
 @pytest.fixture
 def driver(pytestconfig):
     chrome_options = Options()
     if pytestconfig.getoption("--headless"):
-        chrome_options.add_argument("--headless=new")   # новый headless режим
+        chrome_options.add_argument("--headless=new")
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--window-size=1920,1080")
         chrome_options.add_argument("--no-sandbox")
@@ -64,3 +71,17 @@ def load_request_id_file(data_dir):
             raise FileNotFoundError(f"{p} not found. Run producer test first.")
         return p.read_text(encoding="utf-8").strip()
     return _load
+
+
+@pytest.fixture(scope="session")
+def base_url(pytestconfig):
+    env = pytestconfig.getoption("--base-url")
+    urls = {
+        "test": "https://carsrv-test.st.tech",
+        "stage": "https://carsrv-stage.st.tech",
+    }
+
+    if env not in urls:
+        raise ValueError(f"Unknown environment: {env}. Choose from {', '.join(urls.keys())}")
+
+    return urls[env]

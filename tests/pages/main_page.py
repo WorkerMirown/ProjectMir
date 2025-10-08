@@ -10,6 +10,9 @@ class MainPage(BasePage):
     SEARCH_CONTAIBER_CSS = "#primary-group > div:nth-child(1) > div > div > div"
 
     SEARCH_BUTTON_CSS = "#d4d99a6b8c3c6f215e76b62117a1a9f361af5913 button"
+    def __init__(self, driver, base_url):
+        super().__init__(driver)
+        self.base_url = base_url
 
     @allure.step("Сброс фильтров")
     def clear_filters(self):
@@ -51,7 +54,7 @@ class MainPage(BasePage):
     @allure.step("Открываем заявку по ID")
     def open_request_by_id(self, request_id):
         try:
-            expected_href = f"https://carsrv-test.st.tech/requests/{request_id}/edit"
+            expected_href = f"/requests/{request_id}/edit"
             link = self.find_clickable(By.XPATH, f"//table//a[contains(@href,'/requests/{request_id}/edit')]")
             href = link.get_attribute("href")
             assert href == expected_href, f"Ожидали ссылку {expected_href}, но получили {href}"

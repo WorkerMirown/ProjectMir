@@ -6,7 +6,8 @@ from ..pages.base_page import BasePage
 
 
 class RequestPage(BasePage):
-
+    def __init__(self, driver, base_url):
+        super().__init__(driver, base_url)
     # --- Локаторы ---
     # Уведомления / модальные окна
     SEND_TO_STT_BUTTON_XPATH = "//button[.//span[text()='Направить заявку в СТТ']]"
@@ -90,7 +91,7 @@ class RequestPage(BasePage):
     def create_defect(self, request_id,  defect_name="TestDefectAuto"):
         try:
 
-            self.driver.get(f"https://carsrv-test.st.tech/requests/{request_id}/defects")
+            self.driver.get(f"{self.base_url}/requests/{request_id}/defects")
             time.sleep(1.2)
             defect_button = self.find(By.XPATH, self.DEFECT_BUTTON_XPATH)
             defect_button.click()
@@ -117,7 +118,7 @@ class RequestPage(BasePage):
 
     @allure.step("Отправляем в СТО")
     def send_to_sto(self, request_id):
-        self.driver.get(f"https://carsrv-test.st.tech/requests/{request_id}/edit")
+        self.driver.get(f"{self.base_url}/requests/{request_id}/edit")
         button = self.find(By.XPATH, self.SEND_STO_BUTTON_XPATH)
         self.click(button)
         self.close_notification()
@@ -125,7 +126,7 @@ class RequestPage(BasePage):
 
     @allure.step("Открываем первый дефект в заявке")
     def open_first_defect(self, request_id: str):
-        self.driver.get(f'https://carsrv-test.st.tech/requests/{request_id}/defects')
+        self.driver.get(f'{self.base_url}/requests/{request_id}/defects')
         table = self.find(By.CSS_SELECTOR, "table")
         defect_links = table.find_elements(By.CSS_SELECTOR, self.DEFECT_LINK_CSS)
         if not defect_links:
