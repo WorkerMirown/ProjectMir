@@ -54,11 +54,11 @@ class MainPage(BasePage):
     @allure.step("Открываем заявку по ID")
     def open_request_by_id(self, request_id):
         try:
-            expected_href = f"/requests/{request_id}/edit"
+            expected_href = f"{self.base_url}/requests/{request_id}/edit"
             link = self.find_clickable(By.XPATH, f"//table//a[contains(@href,'/requests/{request_id}/edit')]")
             href = link.get_attribute("href")
             assert href == expected_href, f"Ожидали ссылку {expected_href}, но получили {href}"
-            link.click()
+            self.click(link)
 
             self.wait_for_url(expected_href)
             assert self.driver.current_url == expected_href

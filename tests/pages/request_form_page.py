@@ -62,12 +62,12 @@ class RequestFormPage(BasePage):
             raise
 
     @allure.step("Заполняем информацию об автомобиле")
-    def fill_car_info(self, mileage: str, comment: str):
+    def fill_car_info(self, mileage: str):
         try:
             self.find(By.ID, self.MILEAGE_ID).send_keys(mileage)
-            comment_input = self.driver.find_element(By.ID, self.COMMENT_ID)
-            comment_input.clear()
-            comment_input.send_keys(comment)
+           # comment_input = self.driver.find_element(By.ID, self.COMMENT_ID)
+            #comment_input.clear()
+            #comment_input.send_keys(comment)
             time.sleep(1)
         except Exception as e:
             allure.attach(f"Ошибка при заполнении информации об автомобиле: {str(e)}",

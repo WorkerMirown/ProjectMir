@@ -27,7 +27,7 @@ def test_login_and_create_request(driver, save_request_id_file, base_url):
     request_page_form.open_form()
     request_page_form.select_filial()
     request_page_form.select_car()
-    request_page_form.fill_car_info(mileage="5991", comment="Тест")
+    request_page_form.fill_car_info(mileage="5991")
     request_page_form.add_file_request_form()
 
     request_page_form.save_request()

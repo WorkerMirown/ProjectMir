@@ -237,7 +237,6 @@ class RequestPage(BasePage):
                             time.sleep(0.1)
                     allure.attach("Все радиокнопки 'Да' выбраны", "radio_buttons")
 
-
             self.click(self.find(By.XPATH, self.SAVE_BUTTON_XPATH))
             self.click(self.find(By.XPATH, self.CONFIRM_BTN_XPATH))
             self.close_notification()
